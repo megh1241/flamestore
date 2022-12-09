@@ -5,7 +5,7 @@
 #include <mutex>
 #include <map>
 #include <fstream>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 #include "server/model.hpp"
 #include "server/backend.hpp"
 
@@ -45,7 +45,7 @@ class MMapFSBackend : public AbstractServerBackend {
     private:
 
         tl::engine*                                   m_engine;
-        spdlog::logger*                               m_logger;
+        //spdlog::logger*                               m_logger;
         mutable tl::rwlock                            m_models_rwlock;
         std::map<name_t, std::unique_ptr<model_t>>    m_models;
         std::string                                   m_path = ".";
@@ -62,14 +62,14 @@ class MMapFSBackend : public AbstractServerBackend {
             std::string optimizer_conf_filename = basedir.str() + "/optimizer.json";
             std::string optimizer_sig_filename  = basedir.str() + "/optimizer.sig";
 
-            m_logger->info("Searching for model \"{}\" on disk", model_name);
+            //m_logger->info("Searching for model \"{}\" on disk", model_name);
             if(access(model_data_filename.c_str(), F_OK)     == -1
             || access(model_conf_filename.c_str(), F_OK)     == -1
             || access(model_sig_filename.c_str(), F_OK)      == -1
             || access(optimizer_data_filename.c_str(), F_OK) == -1
             || access(optimizer_conf_filename.c_str(), F_OK) == -1
             || access(optimizer_sig_filename.c_str(), F_OK)  == -1) {
-                m_logger->info("Model not found on disk");
+               // m_logger->info("Model not found on disk");
                 return nullptr;
             }
             // create model
@@ -154,13 +154,13 @@ class MMapFSBackend : public AbstractServerBackend {
                         model->m_impl.m_optimizer_data_bulk = m_engine->expose(optimizer_data_ptr, tl::bulk_mode::read_write);
                     }
                 } catch(const tl::exception& e) {
-                    m_logger->critical("Exception caught in flamestore_provider::_reload_model_from_disk: {}", e.what());
+                    //m_logger->critical("Exception caught in flamestore_provider::_reload_model_from_disk: {}", e.what());
                     return nullptr;
                 }
             }
             // insert in the map
             m_models.emplace(model_name, std::move(model));
-            m_logger->info("Found model \"{}\" on disk", model_name);
+            //m_logger->info("Found model \"{}\" on disk", model_name);
             return result;
         }
 
@@ -205,8 +205,8 @@ class MMapFSBackend : public AbstractServerBackend {
     public:
 
         MMapFSBackend(const ServerContext& ctx, const AbstractServerBackend::config_type& config)
-        : m_engine(ctx.m_engine)
-        , m_logger(ctx.m_logger) {
+        : m_engine(ctx.m_engine){
+        //, m_logger(ctx.m_logger) {
             auto it = config.find("path");
             if(it != config.end()) {
                 m_path  = it->second;
@@ -285,18 +285,18 @@ void MMapFSBackend::register_model(
     bool created = false;
     auto model = _find_or_create_model(model_name, created);
     if(not created) {
-        m_logger->error("Model \"{}\" already exists", model_name);
+        //m_logger->error("Model \"{}\" already exists", model_name);
         req.respond(Status(
                     FLAMESTORE_EEXISTS,
                     "A model with the same name is already registered"));
-        m_logger->trace("Leaving MMapFSBackend::register_model");
+        //m_logger->trace("Leaving MMapFSBackend::register_model");
         return;
     }
 
     lock_guard_t guard(model->m_mutex);
     req.respond(Status::OK());
 
-    m_logger->info("Registering model \"{}\"", model_name);
+   // m_logger->info("Registering model \"{}\"", model_name);
 
     try {
 
@@ -312,7 +312,7 @@ void MMapFSBackend::register_model(
         int status = mkdir(basedir.str().c_str(), 0700);
         if(status == -1) {
             req.respond(Status(FLAMESTORE_EMKDIR, "Could not create directory for model"));
-            m_logger->error("Coult not create directory for model \"{}\"", model_name);
+            //m_logger->error("Coult not create directory for model \"{}\"", model_name);
             return;
         }
 
@@ -344,7 +344,7 @@ void MMapFSBackend::register_model(
             int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
             if(fd == -1)
             {
-                m_logger->error("Error opening model.bin for model \"{}\"", model_name);
+                //m_logger->error("Error opening model.bin for model \"{}\"", model_name);
                 req.respond(Status(FLAMESTORE_EIO, "Could not create model.bin"));
                 // XXX cleanup
                 return;
@@ -352,7 +352,7 @@ void MMapFSBackend::register_model(
             int status = ftruncate(fd, model_data_size);
             if(status != 0)
             {
-                m_logger->error("Error truncating model.bin for model \"{}\"", model_name);
+               // m_logger->error("Error truncating model.bin for model \"{}\"", model_name);
                 req.respond(Status(FLAMESTORE_EIO, "Could not resize model.bin"));
                 // XXX cleanup
                 return;
@@ -369,7 +369,7 @@ void MMapFSBackend::register_model(
             int fd = open(filename.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
             if(fd == -1)
             {
-                m_logger->error("Error opening optimizer.bin for model \"{}\"", model_name);
+             //   m_logger->error("Error opening optimizer.bin for model \"{}\"", model_name);
                 req.respond(Status(FLAMESTORE_EIO, "Could not create optimizer.bin"));
                 // XXX cleanup
                 return;
@@ -377,7 +377,7 @@ void MMapFSBackend::register_model(
             int status = ftruncate(fd, optimizer_data_size);
             if(status != 0)
             {
-                m_logger->error("Error truncating optimizer.bin for model \"{}\"", model_name);
+                //m_logger->error("Error truncating optimizer.bin for model \"{}\"", model_name);
                 req.respond(Status(FLAMESTORE_EIO, "Could not resize optimizer.bin"));
                 // XXX cleanup
                 return;
@@ -403,7 +403,7 @@ void MMapFSBackend::register_model(
         }
 
     } catch(const tl::exception& e) {
-        m_logger->critical("Exception caught in MMapFSBackend::register_model: {}", e.what());
+        //m_logger->critical("Exception caught in MMapFSBackend::register_model: {}", e.what());
     }
 }
 
@@ -414,14 +414,14 @@ void MMapFSBackend::get_model_config(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+ //       m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving MMapFSBackend::get_model_config");
+   //     m_logger->trace("Leaving MMapFSBackend::get_model_config");
         return;
     }
-    m_logger->info("Getting model config for model \"{}\"", model_name);
+    //m_logger->info("Getting model config for model \"{}\"", model_name);
     req.respond(Status::OK(model->m_model_config));
 }
 
@@ -432,14 +432,14 @@ void MMapFSBackend::get_optimizer_config(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving MMapFSBackend::get_optimizer_config");
+        //m_logger->trace("Leaving MMapFSBackend::get_optimizer_config");
         return;
     }
-    m_logger->info("Getting optimizer config for model \"{}\"", model_name);
+    //m_logger->info("Getting optimizer config for model \"{}\"", model_name);
     req.respond(Status::OK(model->m_optimizer_config));
 }
 
@@ -452,21 +452,21 @@ void MMapFSBackend::write_model_data(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving MMapFSBackend::write_model_data");
+        //m_logger->trace("Leaving MMapFSBackend::write_model_data");
         return;
     }
-    m_logger->info("Pulling data from model \"{}\"", model_name);
+    //m_logger->info("Pulling data from model \"{}\"", model_name);
     lock_guard_t guard(model->m_mutex);
     if(model->m_model_signature != model_signature) {
-        m_logger->error("Unmatching signatures when writing model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when writing model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving MMapFSBackend::write_model_data");
+        //m_logger->trace("Leaving MMapFSBackend::write_model_data");
         return;
     }
     model->m_impl.m_model_data_bulk << remote_bulk.on(req.get_endpoint());
@@ -483,7 +483,7 @@ void MMapFSBackend::read_model_data(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
@@ -492,14 +492,14 @@ void MMapFSBackend::read_model_data(
 
     lock_guard_t guard(model->m_mutex);
     if(model->m_model_signature != model_signature) {
-        m_logger->error("Unmatching signatures when reading model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when reading model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving MMapFSBackend::read_model_data");
+        //m_logger->trace("Leaving MMapFSBackend::read_model_data");
         return;
     }
-    m_logger->info("Pushing data to model \"{}\"", model_name);
+    //m_logger->info("Pushing data to model \"{}\"", model_name);
     model->m_impl.m_model_data_bulk >> remote_bulk.on(req.get_endpoint());
     req.respond(Status::OK());
 }
@@ -513,24 +513,24 @@ void MMapFSBackend::write_optimizer_data(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving MMapFSBackend::write_optimizer_data");
+        //m_logger->trace("Leaving MMapFSBackend::write_optimizer_data");
         return;
     }
 
     lock_guard_t guard(model->m_mutex);
     if(model->m_optimizer_signature != optimizer_signature) {
-        m_logger->error("Unmatching signatures when writing optimizer for model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when writing optimizer for model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving MMapFSBackend::write_optimizer_data");
+        //m_logger->trace("Leaving MMapFSBackend::write_optimizer_data");
         return;
     }
-    m_logger->info("Pulling data from model optimizer \"{}\"", model_name);
+    //m_logger->info("Pulling data from model optimizer \"{}\"", model_name);
     model->m_impl.m_optimizer_data_bulk << remote_bulk.on(req.get_endpoint());
     req.respond(Status::OK());
     msync(model->m_impl.m_optimizer_data, model->m_impl.m_optimizer_size, MS_SYNC);
@@ -545,24 +545,24 @@ void MMapFSBackend::read_optimizer_data(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving MMapFSBackend::read_optimizer_data");
+        //m_logger->trace("Leaving MMapFSBackend::read_optimizer_data");
         return;
     }
 
     lock_guard_t guard(model->m_mutex);
     if(model->m_optimizer_signature != optimizer_signature) {
-        m_logger->error("Unmatching signatures when reading optimizer for model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when reading optimizer for model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving MMapFSBackend::read_optimizer_data");
+        //m_logger->trace("Leaving MMapFSBackend::read_optimizer_data");
         return;
     }
-    m_logger->info("Pushing data to model optimizer \"{}\"", model_name);
+    //m_logger->info("Pushing data to model optimizer \"{}\"", model_name);
     model->m_impl.m_optimizer_data_bulk >> remote_bulk.on(req.get_endpoint());
     req.respond(Status::OK());
 }

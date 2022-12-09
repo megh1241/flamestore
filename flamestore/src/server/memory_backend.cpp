@@ -1,6 +1,6 @@
 #include <mutex>
 #include <map>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 #include "model.hpp"
 #include "backend.hpp"
 
@@ -24,7 +24,7 @@ class MemoryBackend : public AbstractServerBackend {
     private:
 
         tl::engine*                                   m_engine;
-        spdlog::logger*                               m_logger;
+        //spdlog::logger*                               //m_logger;
         mutable tl::rwlock                            m_models_rwlock;
         std::map<name_t, std::unique_ptr<model_t>>    m_models;
 
@@ -60,7 +60,7 @@ class MemoryBackend : public AbstractServerBackend {
          * @return pointer to the model.
          */
         inline model_t* _find_or_create_model(const std::string& model_name, bool& created) {
-            m_logger->info("Entering _find_or_create_model");
+            //m_logger->info("Entering _find_or_create_model");
             m_models_rwlock.wrlock();
             auto it = m_models.find(model_name);
             if(it == m_models.end()) {
@@ -82,9 +82,9 @@ class MemoryBackend : public AbstractServerBackend {
     public:
 
         MemoryBackend(const ServerContext& ctx, const AbstractServerBackend::config_type& config)
-        : m_engine(ctx.m_engine)
-        , m_logger(ctx.m_logger) {
-            m_logger->debug("Initializing memory backend");
+        : m_engine(ctx.m_engine){
+        //, m_logger(ctx.m_logger) {
+            //m_logger->debug("Initializing memory backend");
         }
 
         MemoryBackend(const AbstractServerBackend&)            = delete;
@@ -98,7 +98,7 @@ class MemoryBackend : public AbstractServerBackend {
                 const std::string& client_addr,
                 const std::string& model_name,
                 const std::string& model_config,
-                std::size_t& model_size,
+                size_t& model_size,
                 const std::string& model_signature) override;
 
         virtual void reload_model(
@@ -112,7 +112,7 @@ class MemoryBackend : public AbstractServerBackend {
                 const std::string& model_name,
                 const std::string& model_signature,
                 const tl::bulk& remote_bulk,
-                const std::size_t& size) override;
+                const size_t& size) override;
 
         virtual void read_model(
                 const tl::request& req,
@@ -120,7 +120,7 @@ class MemoryBackend : public AbstractServerBackend {
                 const std::string& model_name,
                 const std::string& model_signature,
                 const tl::bulk& remote_bulk,
-                const std::size_t& size) override;
+                const size_t& size) override;
 
         virtual void duplicate_model(
                 const tl::request& req,
@@ -135,26 +135,26 @@ void MemoryBackend::register_model(
         const std::string& client_addr,
         const std::string& model_name,
         const std::string& model_config,
-        std::size_t& model_size,
+        size_t& model_size,
         const std::string& model_signature)
 {
     bool created = false;
-    m_logger->info("Entering MemoryBackend::register_model");
+    //m_logger->info("Entering MemoryBackend::register_model");
     auto model = _find_or_create_model(model_name, created);
     if(not created) {
-        m_logger->error("Model \"{}\" already exists", model_name);
+        //m_logger->error("Model \"{}\" already exists", model_name);
         req.respond(Status(
                     FLAMESTORE_EEXISTS,
                     "A model with the same name is already registered"));
-        m_logger->trace("Leaving flamestore_provider::on_register_model");
+        //m_logger->trace("Leaving flamestore_provider::on_register_model");
         return;
     }
-    m_logger->info("Model \"{}\" created", model_name);
+    //m_logger->info("Model \"{}\" created", model_name);
 
     lock_guard_t guard(model->m_mutex);
     req.respond(Status::OK());
 
-    m_logger->info("Registering model \"{}\"", model_name);
+    //m_logger->info("Registering model \"{}\"", model_name);
 
     try {
 
@@ -170,7 +170,7 @@ void MemoryBackend::register_model(
         }
 
     } catch(const tl::exception& e) {
-        m_logger->critical("Exception caught in flamestore_provider::on_register_model: {}", e.what());
+        //m_logger->critical("Exception caught in flamestore_provider::on_register_model: {}", e.what());
     }
 }
 
@@ -181,14 +181,14 @@ void MemoryBackend::reload_model(
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving flamestore_provider::reload_model");
+        //m_logger->trace("Leaving flamestore_provider::reload_model");
         return;
     }
-    m_logger->info("Getting model config for model \"{}\"", model_name);
+    //m_logger->info("Getting model config for model \"{}\"", model_name);
     req.respond(Status::OK(model->m_model_config));
 }
 
@@ -198,29 +198,34 @@ void MemoryBackend::write_model(
         const std::string& model_name,
         const std::string& model_signature,
         const tl::bulk& remote_bulk,
-        const std::size_t& size)
+        const size_t& size)
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
-        m_logger->trace("Leaving write_model");
+        //m_logger->trace("Leaving write_model");
         return;
     }
-    m_logger->info("Pulling data from model \"{}\"", model_name);
+    //m_logger->info("Pulling data from model \"{}\"", model_name);
     lock_guard_t guard(model->m_mutex);
     if(model->m_model_signature != model_signature) {
-        m_logger->error("Unmatching signatures when writing model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when writing model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving write_model");
+        //m_logger->trace("Leaving write_model");
         return;
     }
-    model->m_impl.m_model_data_bulk << remote_bulk.on(req.get_endpoint());
-    req.respond(Status::OK());
+size_t rdma_transfer_size = 800000;
+for(size_t i=0; i<size; i+=rdma_transfer_size){
+                auto chunk = std::min(rdma_transfer_size, size-i);
+    model->m_impl.m_model_data_bulk(i,chunk) << remote_bulk(i,chunk).on(req.get_endpoint());
+   
+}
+ req.respond(Status::OK());
 }
 
 void MemoryBackend::read_model(
@@ -229,11 +234,11 @@ void MemoryBackend::read_model(
         const std::string& model_name,
         const std::string& model_signature,
         const tl::bulk& remote_bulk,
-        const std::size_t& size)
+        const size_t& size)
 {
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
@@ -242,15 +247,20 @@ void MemoryBackend::read_model(
 
     lock_guard_t guard(model->m_mutex);
     if(model->m_model_signature != model_signature) {
-        m_logger->error("Unmatching signatures when reading model \"{}\"", model_name);
+        //m_logger->error("Unmatching signatures when reading model \"{}\"", model_name);
         req.respond(Status(
                     FLAMESTORE_ESIGNATURE,
                     "Unmatching signatures"));
-        m_logger->trace("Leaving on_read_model_data");
+        //m_logger->trace("Leaving on_read_model_data");
         return;
     }
-    m_logger->info("Pushing data to model \"{}\"", model_name);
-    model->m_impl.m_model_data_bulk >> remote_bulk.on(req.get_endpoint());
+    size_t rdma_transfer_size = 800000;
+    //m_logger->info("Pushing data to model \"{}\"", model_name);
+    for (size_t i=0; i<size; i+=rdma_transfer_size) {
+ 	auto chunk = std::min(rdma_transfer_size, size-i);   
+ 	model->m_impl.m_model_data_bulk(i, chunk) >> remote_bulk(i,chunk).on(req.get_endpoint());
+    	
+    }
     req.respond(Status::OK());
 }
 
@@ -259,10 +269,10 @@ void MemoryBackend::duplicate_model(
         const std::string& model_name,
         const std::string& new_model_name)
 {
-    m_logger->info("Entering MemoryBackend::duplicate_model");
+    //m_logger->info("Entering MemoryBackend::duplicate_model");
     auto model = _find_model(model_name);
     if(model == nullptr) {
-        m_logger->error("Model \"{}\" does not exist", model_name);
+        //m_logger->error("Model \"{}\" does not exist", model_name);
         req.respond(Status(
                     FLAMESTORE_ENOEXISTS,
                     "No model found with provided name"));
@@ -271,11 +281,11 @@ void MemoryBackend::duplicate_model(
     bool created = false;
     auto new_model = _find_or_create_model(new_model_name, created);
     if(not created) {
-        m_logger->error("Model \"{}\" already exists", new_model_name);
+        //m_logger->error("Model \"{}\" already exists", new_model_name);
         req.respond(Status(
                     FLAMESTORE_EEXISTS,
                     "A model with the same name is already registered"));
-        m_logger->trace("Leaving flamestore_provider::on_duplicate_model");
+        //m_logger->trace("Leaving flamestore_provider::on_duplicate_model");
         return;
     }
 
@@ -294,4 +304,3 @@ void MemoryBackend::duplicate_model(
 }
 
 }
-

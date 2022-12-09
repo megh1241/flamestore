@@ -78,7 +78,7 @@ class Client {
     return_status register_model(
             const std::string& model_name,
             const std::string& model_config,
-            std::size_t model_data_size,
+            size_t model_data_size,
             const std::string& model_signature);
 
     /**
@@ -101,7 +101,7 @@ class Client {
             const std::string& model_name,
             const std::string& signature,
             std::vector<std::pair<void*,size_t>>& memory,
-            const std::size_t& size);
+            const size_t& size);
 
     /**
      * This function is used by TMCI.
@@ -110,7 +110,7 @@ class Client {
             const std::string& model_name,
             const std::string& signature,
             std::vector<std::pair<void*,size_t>>& memory,
-            const std::size_t& size);
+            const size_t& size);
 };
 
 }

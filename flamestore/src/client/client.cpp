@@ -32,9 +32,11 @@ Client::return_status Client::shutdown()
 Client::return_status Client::register_model(
         const std::string& model_name,
         const std::string& model_config,
-        std::size_t model_data_size,
+        size_t model_data_size,
         const std::string& model_signature)
 {
+    std::cout<<"enter cliebnt register model\n";
+    fflush(stdout);
     Status status = m_rpc_register_model
         .on(m_master_provider)(
             m_client_addr,
@@ -59,7 +61,7 @@ Client::return_status Client::write_model_data(
         const std::string& model_name,
         const std::string& signature,
         std::vector<std::pair<void*,size_t>>& memory,
-        const std::size_t& size)
+        const size_t& size)
 {
     auto& cached_buffer = m_cache[model_name];
     if(cached_buffer.m_bulk.is_null()
@@ -92,7 +94,7 @@ Client::return_status Client::read_model_data(
         const std::string& model_name,
         const std::string& signature,
         std::vector<std::pair<void*,size_t>>& memory,
-        const std::size_t& size)
+        const size_t& size)
 {
     auto& cached_buffer = m_cache[model_name];
     if(cached_buffer.m_bulk.is_null()

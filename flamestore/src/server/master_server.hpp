@@ -6,15 +6,15 @@
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+//#include <spdlog/spdlog.h>
+//#include <spdlog/sinks/basic_file_sink.h>
+//#include <spdlog/sinks/stdout_color_sinks.h>
 #include <ssg.h>
-#include "common/common.hpp"
-#include "common/status.hpp"
-#include "server/server_context.hpp"
-#include "server/master_provider.hpp"
-#include "server/backend.hpp"
+#include "../common/common.hpp"
+#include "../common/status.hpp"
+#include "server_context.hpp"
+#include "master_provider.hpp"
+#include "backend.hpp"
 
 namespace flamestore {
 
@@ -24,7 +24,7 @@ namespace tl = thallium;
 class MasterServer {
 
     tl::engine                      m_engine;
-    std::unique_ptr<spdlog::logger> m_logger;
+    //std::unique_ptr<spdlog::logger> m_logger;
     std::unique_ptr<MasterProvider> m_provider;
     ServerContext                   m_server_context;
     std::string                     m_workspace_path;

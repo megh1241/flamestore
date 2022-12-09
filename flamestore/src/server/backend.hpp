@@ -4,10 +4,10 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
+//#include <spdlog/spdlog.h>
 #include <thallium.hpp>
-#include "common/status.hpp"
-#include "server/server_context.hpp"
+#include "../common/status.hpp"
+#include "server_context.hpp"
 
 namespace flamestore {
 
@@ -48,15 +48,15 @@ class AbstractServerBackend {
         static std::unique_ptr<AbstractServerBackend> create(
                 const std::string& name,
                 const ServerContext& ctx,
-                const config_type& config,
-                spdlog::logger* logger)
+                const config_type& config)
+               //,spdlog::logger* logger)
         {
             auto factory = s_backend_factories.find(name);
             if(factory == s_backend_factories.end()) {
-                logger->critical("Could not find factory for backend {}", name);
+                //logger->critical("Could not find factory for backend {}", name);
                 return std::unique_ptr<AbstractServerBackend>(nullptr);
             } else {
-                logger->info("Creating backend {}", name);
+                //logger->info("Creating backend {}", name);
                 return factory->second(ctx, config);
             }
         }
@@ -66,7 +66,7 @@ class AbstractServerBackend {
                 const std::string& client_addr,
                 const std::string& model_name,
                 const std::string& model_config,
-                std::size_t& model_size,
+                size_t& model_size,
                 const std::string& model_signature) = 0;
 
         virtual void reload_model(
@@ -80,7 +80,7 @@ class AbstractServerBackend {
                 const std::string& model_name,
                 const std::string& model_signature,
                 const tl::bulk& remote_bulk,
-                const std::size_t& size) = 0;
+                const size_t& size) = 0;
 
         virtual void read_model(
                 const tl::request& req,
@@ -88,7 +88,7 @@ class AbstractServerBackend {
                 const std::string& model_name,
                 const std::string& model_signature,
                 const tl::bulk& remote_bulk,
-                const std::size_t& size) = 0;
+                const size_t& size) = 0;
 
         virtual void duplicate_model(
                 const tl::request& req,
