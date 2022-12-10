@@ -23,27 +23,6 @@ def load_dataset():
     return  tf.data.Dataset.from_tensor_slices([1, 2, 3])
 
 
-def create_keras_model_old(size='small', use_bias=True):
-    num_units=0
-    if size=='small':
-        num_layers = 4
-        dense_layer_activation="relu"
-        num_units=1007
-    else:
-        num_units=1631
-        num_layers = 12
-        dense_layer_activation="tanh"
-    inputs = keras.Input((num_units,))
-    with tf.device("/GPU:0"):
-    	x = keras.layers.Dense(num_units, activation=dense_layer_activation, use_bias=use_bias, kernel_initializer='random_normal', bias_initializer='zeros')(inputs)
-    	for i in range(num_layers-1):
-        	x = keras.layers.Dense(num_units, activation=dense_layer_activation, use_bias=use_bias, kernel_initializer='random_normal',
-            	bias_initializer='zeros')(x)
-    outputs = keras.layers.Dense(2, activation=dense_layer_activation, use_bias=use_bias, kernel_initializer='random_normal',
-            bias_initializer='zeros')(x)
-    model = keras.Model(inputs, outputs)
-    #get_model_size(model)
-    return model
 
 
 
@@ -57,17 +36,12 @@ def create_keras_model(size_per_layer, num_layers, variance, num_transferred):
                 size_per_layer - variance, size_per_layer + variance
             )
         name = f'transfer{i}{model_id}{variance}{num_layers}'
-        #if i < num_transferred:
-       # else:
-        #    name = f'notransfer{i}{model_id}{variance}{num_layers}'
-        #name = str_to_int(name)
         if i==0:
             x = tf.keras.layers.Dense(layer_size, name=name, kernel_initializer='random_normal')(inputs)
         elif i==num_layers:
             outputs = tf.keras.layers.Dense(layer_size, name=name, kernel_initializer='random_normal')(x)
         else:
             x= tf.keras.layers.Dense(layer_size, name=name, kernel_initializer='random_normal')(x)
-        #print(i, flush=True)
     model = keras.Model(inputs, outputs)
     return model
 
@@ -92,9 +66,6 @@ def build_model(model, optimizer='Adam'):
     else:
         print('Unkown optimizer '+optimizer)
         sys.exit(-1)
-    #model.compile(optimizer=opt,
-    #              loss='categorical_crossentropy',
-    #              metrics=['accuracy'])
 
 
 def train_model(model, dataset, batch_size=32,
